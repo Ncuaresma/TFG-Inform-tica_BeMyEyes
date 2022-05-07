@@ -35,11 +35,8 @@
 using namespace cv;
 using namespace std;
 
-
-int main(int argc, char* argv[])
-{
-    cv::Mat input = cv::imread("Imagenes/Prueba5.jpeg");//----------------ALGO PASA CON PRUEBA1.jpeg
-
+//Line detection from a input picture
+std::vector<cv::Vec4i> detect_lines(cv::Mat input){
     // convert to HSV color space
     cv::Mat hsvImage;
     cv::cvtColor(input, hsvImage, CV_BGR2HSV);
@@ -89,7 +86,27 @@ int main(int argc, char* argv[])
     cv::HoughLinesP(hueMask, lines, 1, CV_PI / 360, 50, 50, 10);
 
     std::cout<<"Num lineas: "<<lines.size()<<endl;
-    
+
+    return lines;
+}
+
+/*******************************************************************************************
+    Function that prints the lines in green in the picture
+********************************************************************************************/
+void print_lines(std::vector<cv::Vec6d> line, cv::Mat input){
+    // draw the result as big green lines:
+    for (unsigned int i = 0; i < line.size(); i++)
+    {
+        cv::line(input, cv::Point(line[i][2], line[i][3]), cv::Point(line[i][4], line[i][5]), cv::Scalar(0, 255, 0), 5);
+    }
+    cv::imshow("input2", input);
+}
+
+/*******************************************************************************************
+    Function that identify the coordenades of the boxes that select the objects in the image
+********************************************************************************************/
+void obtain_boxes(std::vector<cv::Vec4i> lines, cv::Mat input){
+
     ofstream horizontal_file;
     horizontal_file.open ("Horizontal_lines.txt");
     ofstream vertical_file;
@@ -330,12 +347,8 @@ int main(int argc, char* argv[])
     }
     //------------------------//pintar las lineas para facilitar el ver cuales son porque vaya liooo
     
-    // draw the result as big green lines:
-    for (unsigned int i = 0; i < relevant_v_lines.size(); i++)
-    {
-        cv::line(input, cv::Point(relevant_v_lines[i][2], relevant_v_lines[i][3]), cv::Point(relevant_v_lines[i][4], relevant_v_lines[i][5]), cv::Scalar(0, 255, 0), 5);
-    }
-    cv::imshow("input2", input);
+    print_lines(relevant_v_lines, input);
+    
 
     /*
     //----------------------------------------Horizontales y verticales--------------------------------------
@@ -406,6 +419,19 @@ int main(int argc, char* argv[])
     */
     //cv::imwrite("Imagenes/coloredLines_mask_4.png", hueMask);
     //cv::imwrite("Imagenes/Testing/coloredLines_detection_4_SemiHorVert.png", input);
+}
+
+
+int main(int argc, char* argv[])
+{
+    cv::Mat input = cv::imread("Imagenes/Prueba5.jpeg");//----------------ALGO PASA CON PRUEBA1.jpeg
+
+    //Detection of the lines in a picture
+    std::vector<cv::Vec4i> lines = detect_lines(input);
+    
+    //Obtain the semi vertical and horizontal lines
+    obtain_boxes(lines, input);
+
     
     cv::waitKey(0);
     return 0;

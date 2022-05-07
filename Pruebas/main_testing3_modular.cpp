@@ -95,7 +95,7 @@ void print_lines(std::vector<cv::Vec6d> vector, cv::Mat input){
     // draw the result as big green linles:
     for (unsigned int i = 0; i < vector.size(); ++i)
     {
-        cv::line(input, cv::Point(vector[i][0], vector[i][1]), cv::Point(vector[i][2], vector[i][3]), cv::Scalar(0, 255, 0), 5);
+         cv::line(input, cv::Point(vector[i][2], vector[i][3]), cv::Point(vector[i][4], vector[i][5]), cv::Scalar(0, 255, 0), 5);
     }
     cv::imshow("input2", input);
     //cv::imwrite("Imagenes/coloredLines_mask_4.png", hueMask);
@@ -110,8 +110,18 @@ void print_in_file(std::ofstream& file, std::string n, std::vector<cv::Vec6d> li
 
     }
 }
-/*
-combine_lines(std::vector<cv::Vec6d> vertical_lines, std::vector<int> irrelevant_lines){
+
+cv::Vec6d combine_lines(int i, std::vector<cv::Vec6d> vertical_lines, std::vector<int> &irrelevant_lines, cv::Mat input){
+    //identify the lines from the boxes in the image
+    cv::Vec6d check_line, unique_line;
+    //to get the lines close to the one we are checking 
+    std::vector<int> close_lines ={};
+    //to discart the irrelevant lines
+    std::vector<int> irrelevant_close_lines = {};
+    //flag
+    int flag = 0;
+
+    unique_line = vertical_lines[i];
     //Consideramos irrelevante aquella linea que ya hemos unido a otra y por tanto ya se ha visitado
     for(int j = i; j < vertical_lines.size(); j++){
         if (std::find(irrelevant_lines.begin(), irrelevant_lines.end(), j)!= irrelevant_lines.end()) {
@@ -148,9 +158,49 @@ combine_lines(std::vector<cv::Vec6d> vertical_lines, std::vector<int> irrelevant
             }
         }
     }
-    return close_lines;
+    //vemos si al haber alargado las lineas ahora coincide con otra
+    //to discart the irrelevant lines
+    irrelevant_close_lines = {}; 
+    while(flag == 1){
+        flag = 0;
+        for(int k = 0; k < close_lines.size(); k++){
+
+            cv::line(input, cv::Point(vertical_lines[close_lines[k]][2], vertical_lines[close_lines[k]][3]), cv::Point(vertical_lines[close_lines[k]][4], vertical_lines[close_lines[k]][5]), cv::Scalar(0, 255, 0), 5);
+
+
+            if (std::find(irrelevant_close_lines.begin(), irrelevant_close_lines.end(), k)!= irrelevant_close_lines.end()) {
+                std::cout << "Irrelevant line" << k << endl;
+            }
+            else{
+                std::cout << k <<endl;
+                check_line = close_lines[k];
+                //vemos que la y sea similar, es decir que difieran una d ela otra en 10 pixels como mucho
+                // y este una justo debajo a la otra con respecto a las x
+
+                //si además las y's están entrelazadas entonces se pueden unir
+                 if( ( (unique_line[3] <= check_line[3]) and (check_line[3] <= unique_line[5]) or
+                    (unique_line[3] <= check_line[5]) and (check_line[5] <= unique_line[5]) ) ){
+                    unique_line[0]++;
+                    std::cout << close_lines[k];
+                    //hacemos la linea más larga (la x mayor)
+                    if(check_line[3] <= unique_line[3]){
+                        unique_line[3] = check_line[3];
+                        flag = 1;
+                    }
+                    if(check_line[5] >= unique_line[5]){
+                        unique_line[5] = check_line[5];
+                        flag = 1;
+                    }
+                    //esta linea ya esta compuesta en la otra
+                    irrelevant_close_lines.push_back(k);
+                    std::cout << unique_line[0] << endl;
+                }
+            }
+        }
+    }
+    return unique_line;
 }
-*/
+
 
 vector<cv::Vec6d> get_relevant_horizontal_lines(std::vector<cv::Vec6d> horizontal_lines){
 
@@ -221,29 +271,19 @@ vector<cv::Vec6d> get_relevant_horizontal_lines(std::vector<cv::Vec6d> horizonta
 }
 
 vector<cv::Vec6d> get_relevant_vertical_lines(std::vector<cv::Vec6d> vertical_lines, cv::Mat input){
-//identify the lines from the boxes in the image
-    cv::Vec6d check_line, unique_line;
+    //identify the lines from the boxes in the image
+    cv::Vec6d unique_line;
     //to discart the irrelevant lines
-    std::vector<int> irrelevant_lines ={};
-    //to get the lines close to the one we are checking 
-    std::vector<int> close_lines ={};
-    //to discart the irrelevant lines
-    std::vector<int> irrelevant_close_lines = {};
+    std::vector<int> irrelevant_lines = {};
     //Relevant vertical lines (boxes lines)
     std::vector<cv::Vec6d> relevant_v_lines;
-    //to discart the irrelevant lines
-    irrelevant_lines ={};
-    irrelevant_close_lines ={};
-    close_lines = {};
-    //flag
-    int flag = 0;
+
 
     //Identify the relevant vertical lines    
     for(int i = 0; i < vertical_lines.size(); i++){
-        unique_line = vertical_lines[i];
-        close_lines = {};
 
-        //We will no check if we identified that the line is irrelevant
+
+        //We will no check if we identified that the line is irrelevant<< i
         if (std::find(irrelevant_lines.begin(), irrelevant_lines.end(), i)!= irrelevant_lines.end()) {
             std::cout << "Irrelevant line" << i << endl;
         }
@@ -251,10 +291,10 @@ vector<cv::Vec6d> get_relevant_vertical_lines(std::vector<cv::Vec6d> vertical_li
             std::cout << "Checking line" << i << endl;
 
             //////////////////////////////////////////////////////////////////////////////////////////////
-            //close_lines = combine_lines();
+            unique_line = combine_lines(i, vertical_lines, irrelevant_lines, input);
             ///////////////////////////////////////////////////////////////////////////////////////////////
 
-
+            /*
             //Consideramos irrelevante aquella linea que ya hemos unido a otra y por tanto ya se ha visitado
             for(int j = i; j < vertical_lines.size(); j++){
                 if (std::find(irrelevant_lines.begin(), irrelevant_lines.end(), j)!= irrelevant_lines.end()) {
@@ -330,7 +370,7 @@ vector<cv::Vec6d> get_relevant_vertical_lines(std::vector<cv::Vec6d> vertical_li
                         }
                     }
                 }
-            }   
+            }  */ 
             //The red boxes that select the objects are 4 or more pixels thickness
             if(unique_line[0] > 3){
                 //Initialized to 0 again for the next test
