@@ -88,8 +88,6 @@ std::vector<cv::Vec4i> detect_lines(cv::Mat input){
     std::vector<cv::Vec4i> lines;
     cv::HoughLinesP(hueMask, lines, 1, CV_PI / 360, 50, 50, 10);
 
-    std::cout<<"Num lineas: "<<lines.size()<<endl;
-
     return lines;
 }
 
@@ -98,8 +96,7 @@ std::vector<cv::Vec4i> detect_lines(cv::Mat input){
 ********************************************************************************************/
 void print_lines(std::vector<cv::Vec6d> vector, cv::Mat input){
     // draw the result as big green linles:
-    std::cout << "Lineaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaassss" << vector.size() << endl;
-    
+ 
     cv::imshow("Lineas", input);
     for (unsigned int i = 0; i < vector.size(); ++i)
     {
@@ -122,34 +119,70 @@ void print_in_file(std::ofstream& file, std::string n, std::vector<cv::Vec6d> li
     }
 }
 
+/*******************************************************************************************
+    Function that tests if the lines are criss-crossed
+********************************************************************************************/
 bool mixed_lines(cv::Vec6d check_line, cv::Vec6d unique_line){
-    if( ((unique_line[3] <= check_line[3]) and (check_line[3] <= unique_line[5])) or
+    if(check_line[1] == 1)
+        return (((unique_line[3] <= check_line[3]) and (check_line[3] <= unique_line[5])) or
                     ((unique_line[3] <= check_line[5]) and (check_line[5] <= unique_line[5])) or 
                     ((unique_line[3] >= check_line[3]) and (check_line[3] >= unique_line[5])) or
-                    ((unique_line[3] >= check_line[5]) and (check_line[5] >= unique_line[5])))
-        return true;
+                    ((unique_line[3] >= check_line[5]) and (check_line[5] >= unique_line[5])));
+    else if(check_line[1] == 0)
+        return (((unique_line[2] <= check_line[2]) and (check_line[2] <= unique_line[4])) or
+                    ((unique_line[2] <= check_line[4]) and (check_line[4] <= unique_line[4])) or 
+                    ((unique_line[2] >= check_line[2]) and (check_line[2] >= unique_line[4])) or
+                    ((unique_line[2] >= check_line[4]) and (check_line[4] >= unique_line[4])));
+    
     return false;
 }
 
-
+/*******************************************************************************************
+    Function that joins two lines that are close
+********************************************************************************************/
 void join_lines(cv::Vec6d check_line, cv::Vec6d &unique_line, std::vector<double> coordenates, int &flag){
     unique_line[0]++;
+    
+    if(check_line[1] == 1){
+        coordenates = {unique_line[3], unique_line[5], check_line[3], check_line[5]};
 
-    coordenates = {unique_line[3], unique_line[5], check_line[3], check_line[5]};
+        double min_value = *std::min_element(coordenates.begin(), coordenates.end());
+        double max_value = *std::max_element(coordenates.begin(), coordenates.end());
+        //hacemos la linea más larga (la x mayor)
+        if(unique_line[3] > min_value){
+            unique_line[3] = min_value;
+            flag = 1;
+        }
+        if(unique_line[5] < max_value){
+            unique_line[5] = max_value;
+            flag = 1;
+        }
+    }else if(check_line[1] == 0){
+        coordenates = {unique_line[2], unique_line[4], check_line[2], check_line[4]};
 
-    double min_value = *std::min_element(coordenates.begin(), coordenates.end());
-    double max_value = *std::max_element(coordenates.begin(), coordenates.end());
-    //hacemos la linea más larga (la x mayor)
-    if(unique_line[3] > min_value){
-        unique_line[3] = min_value;
-        flag = 1;
-        cout<<"entra1"<< unique_line[3] <<" << "<<min_value<<endl;
+        double min_value = *std::min_element(coordenates.begin(), coordenates.end());
+        double max_value = *std::max_element(coordenates.begin(), coordenates.end());
+        //hacemos la linea más larga (la x mayor)
+        if(unique_line[2] > min_value){
+            unique_line[2] = min_value;
+            flag = 1;
+        }
+        if(unique_line[4] < max_value){
+            unique_line[4] = max_value;
+            flag = 1;
+        }
     }
-    if(unique_line[5] < max_value){
-        unique_line[5] = max_value;
-        flag = 1;
-        cout<<"entra2"<< unique_line[5]<<" << "<<max_value<<endl;
-    }
+}
+
+/*******************************************************************************************
+    Function that tests if the lines are close from echa other
+********************************************************************************************/
+bool similar_lines(cv::Vec6d check_line, cv::Vec6d unique_line){
+    if(check_line[1] == 1)
+        return ((abs(check_line[2] - unique_line[2]) < 15) or (abs(check_line[4] - unique_line[4]) < 15));
+    else if(check_line[1] == 0)
+        return ((abs(check_line[3] - unique_line[3]) < 15) or (abs(check_line[5] - unique_line[5]) < 15));
+    return false;
 }
 
 /*******************************************************************************************
@@ -170,23 +203,20 @@ cv::Vec6d combine_lines(int i, std::vector<cv::Vec6d> vertical_lines, std::vecto
     //Consideramos irrelevantes aquella linea que ya hemos unido a otra y por tanto ya se ha visitado
     for(int j = i+1; j < vertical_lines.size(); j++){
         if (std::find(irrelevant_lines.begin(), irrelevant_lines.end(), j)!= irrelevant_lines.end()) {
-            std::cout << "Irrelevant line" << j << endl;
         }
         else{
-            std::cout << j<<endl;
             check_line = vertical_lines[j];
             //vemos que la y sea similar, es decir que difieran una de la otra en 10 pixels como mucho
             // y este una justo debajo a la otra con respecto a las x
 
             //Primero comprobamos si tienen x parecida
-            if( (abs(check_line[2] - unique_line[2]) < 15) or (abs(check_line[4] - unique_line[4]) < 15) ){
+            if( similar_lines(check_line, unique_line) ){
                 close_lines.push_back(j);
                 //si además las y's están entrelazadas entonces se pueden unir
                  if( mixed_lines(check_line, unique_line) ){
                     join_lines(check_line, unique_line, coordenates, flag);
                     //esta linea ya esta compuesta en la otra
                     irrelevant_lines.push_back(j);
-                    std::cout << unique_line[0] << endl;
                 }
             }
         }
@@ -197,13 +227,9 @@ cv::Vec6d combine_lines(int i, std::vector<cv::Vec6d> vertical_lines, std::vecto
     while(flag == 1){
         flag = 0;
         for(int k = 0; k < close_lines.size(); k++){
-            /*cv::line(input, cv::Point(vertical_lines[close_lines[k]][2], vertical_lines[close_lines[k]][3]), cv::Point(vertical_lines[close_lines[k]][4], vertical_lines[close_lines[k]][5]), cv::Scalar(0, 255, 0), 5);
-    */
             if (std::find(irrelevant_close_lines.begin(), irrelevant_close_lines.end(), k)!= irrelevant_close_lines.end()) {
-                std::cout << "Irrelevant line" << k << endl;
             }
             else{
-                std::cout << k <<endl;
                 check_line = close_lines[k];
                 //vemos que la y sea similar, es decir que difieran una d ela otra en 10 pixels como mucho
                 // y este una justo debajo a la otra con respecto a las x
@@ -213,7 +239,6 @@ cv::Vec6d combine_lines(int i, std::vector<cv::Vec6d> vertical_lines, std::vecto
                     join_lines(check_line, unique_line, coordenates, flag);
                     //esta linea ya esta compuesta en la otra
                     irrelevant_close_lines.push_back(k);
-                    std::cout << unique_line[0] << endl;
                 }
             }
         }
@@ -221,59 +246,28 @@ cv::Vec6d combine_lines(int i, std::vector<cv::Vec6d> vertical_lines, std::vecto
     return unique_line;
 }
 
-
-vector<cv::Vec6d> get_relevant_horizontal_lines(std::vector<cv::Vec6d> horizontal_lines){
-
-    //vamos a plantearlo como que si hay una linea justo debajo de esa aunque las x sean diferentes coges la x menor de x1 y mayor de x2
-    //Relevant horizontal lines (boxes lines)
-    std::vector<cv::Vec6d> relevant_h_lines;
+/*******************************************************************************************
+    Function that gets the most relevant horizontal lines to detect each object of the picture
+********************************************************************************************/
+vector<cv::Vec6d> get_relevant_horizontal_lines(std::vector<cv::Vec6d> horizontal_lines, cv::Mat input){
     //identify the lines from the boxes in the image
-    cv::Vec6d check_line, unique_line;
+    cv::Vec6d unique_line;
     //to discart the irrelevant lines
-    std::vector<int> irrelevant_lines ={};
-    //to get the lines close to the one we are checking 
-    std::vector<int> close_lines ={};
-    //to discart the irrelevant lines
-    std::vector<int> irrelevant_close_lines = {};
+    std::vector<int> irrelevant_lines = {};
+    //Relevant vertical lines (boxes lines)
+    std::vector<cv::Vec6d> relevant_h_lines = {};
 
-    //Identify the relevant horizontal lines    
+    //Identify the relevant vertical lines    
     for(int i = 0; i < horizontal_lines.size(); i++){
-        unique_line = horizontal_lines[i];
-        //We will no check if we identified that the line is irrelevant
+        //We will no check if we identified that the line is irrelevant<< i
         if (std::find(irrelevant_lines.begin(), irrelevant_lines.end(), i)!= irrelevant_lines.end()) {
-            std::cout << "Irrelevant line" << i << endl;
         }
         else {
-            /*-----COMMENT DE REVISION---- 
-            j=0 y no i+1, creo que mejor porque puede haber lineas pequeñitas que al principio no estén debajo peor al unirse a otras se vea que son la misma*/
-            std::cout << "Checking line" << i << endl;
-            for(int j = i+1; j < horizontal_lines.size(); j++){
-                if (std::find(irrelevant_lines.begin(), irrelevant_lines.end(), j)!= irrelevant_lines.end()) {
-                std::cout << "Irrelevant line" << j << endl;
-                }
-                else{
-                    check_line = horizontal_lines[j];
-                    //vemos que la y sea similar, es decir que difieran una de la otra en 10 pixels como mucho
-                    // y este una justo debajo a la otra con respecto a las x
-                    if( (abs(check_line[3] - unique_line[3]) < 10) and 
-                        ( (unique_line[2] <= check_line[2]) and (check_line[2] <= unique_line[4]) or
-                        (unique_line[2] <= check_line[4]) and (check_line[4] <= unique_line[4]) ) ){
-                        unique_line[0]++;
-                        std::cout << horizontal_lines[j];
-                        //hacemos la linea más larga (la x mayor)
-                        if(check_line[2] < unique_line[2]){
-                            unique_line[2] = check_line[2];
-                        }if(check_line[4] > unique_line[4]){
-                            unique_line[4] = check_line[4];
-                        }
-                        //esta linea ya esta compuesta en la otra
-                        irrelevant_lines.push_back(j);
-                        std::cout << unique_line[0] << endl;
-                    }
-                }
-            }
-            //The red boxes that select te objects are 2 pixels thickness
-            if(unique_line[0] > 3){                
+
+            unique_line = combine_lines(i, horizontal_lines, irrelevant_lines, input);
+
+            //The red boxes that select the objects are 3 or more pixels thickness
+            if(unique_line[0] > 3){
                 //Initialized to 0 again for the next test
                 unique_line[0] = 0;
                 //Identified as a relevant horizontal line
@@ -282,20 +276,16 @@ vector<cv::Vec6d> get_relevant_horizontal_lines(std::vector<cv::Vec6d> horizonta
         }
     }
 
-    //Imprimir la lineas en un fichero, que ya lo borraremos o si no lo metemos en el bucle anterior
+    //Imprimir la lineas en un fichero, que ya lo borraremos
     ofstream relevant_h_file;
-    relevant_h_file.open("Relevant_horizontal_lines.txt");
-    std::cout<<relevant_h_lines.size();
-    for (int i = 0; i < relevant_h_lines.size(); i++) {
-        //Print the lines on a file
-        //print only the lines that are horizontal(Compare if y1 == y2)
-        relevant_h_file << relevant_h_lines[i] << endl;
-    }
+    std::string name = "Relevant_horizontal_lines.txt";
+    print_in_file(relevant_h_file, name, relevant_h_lines);
     return relevant_h_lines;
+
 }
 
 /*******************************************************************************************
-    Function that gets the most relevant lines to detect each object of the picture
+    Function that gets the most relevant vertical lines to detect each object of the picture
 ********************************************************************************************/
 vector<cv::Vec6d> get_relevant_vertical_lines(std::vector<cv::Vec6d> vertical_lines, cv::Mat input){
     //identify the lines from the boxes in the image
@@ -309,16 +299,13 @@ vector<cv::Vec6d> get_relevant_vertical_lines(std::vector<cv::Vec6d> vertical_li
     for(int i = 0; i < vertical_lines.size(); i++){
         //We will no check if we identified that the line is irrelevant<< i
         if (std::find(irrelevant_lines.begin(), irrelevant_lines.end(), i)!= irrelevant_lines.end()) {
-            std::cout << "Irrelevant line" << i << endl;
         }
         else {
-            std::cout << "Checking line" << i << endl;
 
             unique_line = combine_lines(i, vertical_lines, irrelevant_lines, input);
 
             //The red boxes that select the objects are 3 or more pixels thickness
             if(unique_line[0] > 3){
-                std::cout << "ooooooooooooooooooooooooooooooooooooooooooooooo" << unique_line[0] << endl;
                 //Initialized to 0 again for the next test
                 unique_line[0] = 0;
                 //Identified as a relevant horizontal line
@@ -376,23 +363,21 @@ void obtain_boxes(std::vector<cv::Vec4i> lines, cv::Mat input){
     std::cout<<"Num horizontales: "<<horizontal_lines.size()<<endl;
     std::cout<<"Num verticales: "<<vertical_lines.size()<<endl;
 
- /*   // draw the result as big green lines:
-    print_lines(horizontal_lines, input);
-    print_lines(vertical_lines, input);
-*/
-
     //----------------------------------------------------------HORIZONTAL LINES-------------------------------------------------------
-   //Relevant horizontal lines (boxes lines)
 
-    std::vector<cv::Vec6d> relevant_h_lines = get_relevant_horizontal_lines(horizontal_lines);
-
-    //print_lines(relevant_h_lines, input);
-
+    std::vector<cv::Vec6d> relevant_h_lines = get_relevant_horizontal_lines(horizontal_lines, input);
+  
+    // draw the result as big green lines:
+    if(relevant_h_lines.size() != 0){
+        print_lines(relevant_h_lines, input);
+        std::cout<<"Hay lineas horizontales relevantes ->"<<relevant_h_lines.size()<<endl;
+    }else{       
+        std::cout<<"No hay líneas horizontales ->"<<relevant_h_lines.size()<<endl;
+    }
     //----------------------------------------------------------VERTICAL LINES-------------------------------------------------------
-    
 
     std::vector<cv::Vec6d> relevant_v_lines = get_relevant_vertical_lines(vertical_lines, input);
-    //pintar las lineas     
+  
     // draw the result as big green lines:
     if(relevant_v_lines.size() != 0){
         print_lines(relevant_v_lines, input);
@@ -468,9 +453,8 @@ void obtain_boxes(std::vector<cv::Vec4i> lines, cv::Mat input){
 
 int main(int argc, char* argv[]){
 
-    cv::Mat input = cv::imread("Imagenes/Prueba5.jpeg");
-    //BORRRRAAAAAAAAAAAAAAAAAAAR TESTSSSSSSSSSSSSS
-    cv::imshow("inicio", input);
+    cv::Mat input = cv::imread("Imagenes/Prueba4.jpeg");
+    
     //Detection of the lines in a picture
     std::vector<cv::Vec4i> lines = detect_lines(input);
 
