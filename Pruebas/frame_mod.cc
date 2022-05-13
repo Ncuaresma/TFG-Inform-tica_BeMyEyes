@@ -83,7 +83,7 @@ class Frame {
     double height; // height of the frame
     std::string name;
     vector<Box> boxes; // array of areas of the same box from different frames
-    Box mainBox; 
+    //Box mainBox; 
 
    public:
 
@@ -96,7 +96,7 @@ class Frame {
         //height = hgt;
     //}
 
-    Frame(int numero, std::string n, cv::Mat image) : mainBox(image.rows,image.cols,n){
+    Frame(int numero, std::string n, cv::Mat image) /*: mainBox(image.rows,image.cols,n,)*/{
         //Obtener las dimensiones de la imagen
         id = numero;
         name = n;
@@ -121,6 +121,9 @@ class Frame {
 
     double get_height(){
         return height;
+    }
+    void add_box_frame(Box box){
+        boxes.push_back(box);
     }
 
     void print_frame(){

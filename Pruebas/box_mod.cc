@@ -72,6 +72,8 @@ class Box {
     vector<double> length; // array of lengths of the same box from different frames
     vector<double> height; // array of heights of the same box from different frames
     vector<double> area; // array of areas of the same box from different frames
+    std::vector<cv::Vec6d> lines = {};
+    std::vector<double> coordenates = {};//x1, y1, x2, y2
     //vector <double> growing; // percentage of the growing from teh box1 to the same box1 of the next frame
     // estas dos de abajo son posibbles manera de identificar cada box para poder comparar las correspondientes de un frame u otro
     //ESTA NO SIRVE PARA NADA vector<double> position; // para ubicar la caja y poder comprobar que es la misma de un frame a otro
@@ -81,12 +83,13 @@ class Box {
    public:
 
     // function to initialize private variables
-    Box(double len, double hgt, std::string n){
+    Box(double len, double hgt, std::string n, vector<double> coord){
         // add the new information of the box to the vector
         length.push_back(len);
         height.push_back(hgt);
         area.push_back(len * hgt);
         name = n;
+        copy(coord.begin(),coord.end(), coordenates.begin());
         //tambien habra que añadir que area seleccionamos para coger el color
         //y el color que tiene en ese arrea
         // lo mismo lo mejor seria un array de matrices y guardar directamente la matriz con la que comparar

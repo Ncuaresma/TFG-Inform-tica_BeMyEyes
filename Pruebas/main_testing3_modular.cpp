@@ -322,10 +322,87 @@ vector<cv::Vec6d> get_relevant_vertical_lines(std::vector<cv::Vec6d> vertical_li
     return relevant_v_lines;
 }
 
+void create_boxes(std::vector<cv::Vec6d> relevant_h_lines, std::vector<cv::Vec6d> relevant_v_lines, cv::Mat input, Frame frm){
+    //to discart the irrelevant lines
+    std::vector<int> irrelevant_lines = {};
+    int num_box = 0;
+    std::vector<double> coordenates = {};//x1, y1, x2, y2
+    std::vector<cv::Vec6d> box_lines = {};
+    cv::Vec6d first_line, check_h_line, check_v1_line, check_v2_line;
+    for(int i = 0; i < relevant_h_lines.size(); i++){
+        if (std::find(irrelevant_lines.begin(), irrelevant_lines.end(), i)!= irrelevant_lines.end()) {
+        }else{
+            first_line = relevant_h_lines[i];
+            for(int j = i+1; j<relevant_h_lines.size();j++){
+                if (std::find(irrelevant_lines.begin(), irrelevant_lines.end(), j)!= irrelevant_lines.end()) {
+                }else{
+                    check_h_line = relevant_h_lines[j];
+                    if((abs(check_h_line[2] - first_line[2]) < 30) and (abs(check_h_line[4] - first_line[4]) <  30)){
+                        box_lines.push_back(first_line);
+                        box_lines.push_back(check_h_line);
+                        irrelevant_lines.push_back(j);
+                        //cuidadoo que si no encuentra a su paralela tambien tien que entrar aquii
+                        first_line[0] = 2;//2
+                        check_h_line[0]++;
+                        break;
+                    }
+                }
+            }
+            for (int k = 0; k < relevant_v_lines.size(); k++){
+                check_v1_line = relevant_v_lines[k];
+                //first_line[3] = first_line[5] as is horizontal y1=y2
+                if(((abs(check_v1_line[3] - first_line[3]) < 30) or (abs(check_v1_line[5] - first_line[3]) <  30))
+                    and ((abs(check_v1_line[2] - first_line[2]) < 30) or (abs(check_v1_line[2] - first_line[4]) <  30))){
+                    
+                    //si entra ya hay 3 lineas que componen la caja, nos es suficiente
+                    if((first_line[0] == 2)and((abs(check_v1_line[3] - check_h_line[3]) < 30) or (abs(check_v1_line[5] - check_h_line[3]) <  30))){
+                        first_line[0]++;//3
+                        box_lines.push_back(check_v1_line);
+                        coordenates.push_back(first_line[2]);//x1
+                        coordenates.push_back(check_v1_line[3]);
+                        coordenates.push_back(first_line[4]);
+                        coordenates.push_back(check_v1_line[5]);
+                        std:: cout<<"dos horizontales y una vertical"<<endl;
+                        break;
+                    }
+                    //Solo ha identificado una linea vertical y una horizontal y ahora ve otra vertical posible
+                    if(first_line[0] == 1){
+
+                        if((abs(check_v1_line[3] - check_v2_line[3]) < 30) and (abs(check_v1_line[5] - check_v2_line[5]) <  30)){
+                            first_line[0]= 3;//3
+                            box_lines.push_back(first_line);
+                            box_lines.push_back(check_v1_line);
+                            coordenates.push_back(first_line[2]);//x1
+                            coordenates.push_back(check_v1_line[3]);
+                            coordenates.push_back(first_line[4]);
+                            coordenates.push_back(check_v1_line[5]);
+                            std:: cout<<"dos verticales y una horizontal"<<endl;
+                            break;
+                        }
+                    }
+                    first_line[0]++;//1
+                    box_lines.push_back(check_v1_line);
+                    //la anterior linea para el siguiente bucle
+                    check_v2_line = relevant_v_lines[k];
+                }
+            }
+            //consideramos si es un objeto box, y esto pasa si está formado al menos por 3 líneas
+            
+            if(first_line[0] == 3){
+                print_lines(box_lines, input);
+                /*Box(abs(first_line[4]-first_line[2]), abs(check_v1_line[5]-check_v1_line[3]), std::to_string(num_box), coordenates);*/
+                num_box++;
+                //CREAMOS LA CAJA CON LAS COORDENADAS
+            }
+        }
+    }
+    std::cout<<"Hay "<< num_box<<" cajas en este frame"<< endl;
+}
+
 /*******************************************************************************************
     Function that identify the coordenades of the boxes that select the objects in the image
 ********************************************************************************************/
-void obtain_boxes(std::vector<cv::Vec4i> lines, cv::Mat input){
+void obtain_boxes(std::vector<cv::Vec4i> lines, cv::Mat input, Frame frm){
     //Creamos los ficheros donde vamos a escribir las lineas
     ofstream horizontal_file;
     ofstream vertical_file;
@@ -350,10 +427,10 @@ void obtain_boxes(std::vector<cv::Vec4i> lines, cv::Mat input){
         //¡¡IMPORTANTE el vector lines es de 4 coordenadas!!
         //Print the lines on a file
         //print only the lines that are semi horizontal or vertical (Horizontal if y1 - y2 < 5, vertical x1 - x2 <5)
-        if(abs(lines[i][1] - lines[i][3]) < 5) {
+        if(abs(lines[i][1] - lines[i][3]) < 7) {
             horizontal_file << lines[i] << endl;
             horizontal_lines.push_back(Vec6d(0, 0, lines[i][0], lines[i][1],lines[i][2], lines[i][3]));
-        }else if(abs(lines[i][0] - lines[i][2]) < 5) {
+        }else if(abs(lines[i][0] - lines[i][2]) < 7) {
             vertical_file << lines[i] << endl;
             vertical_lines.push_back(Vec6d(0, 1, lines[i][0], lines[i][1],lines[i][2], lines[i][3]));
         }        
@@ -369,7 +446,7 @@ void obtain_boxes(std::vector<cv::Vec4i> lines, cv::Mat input){
   
     // draw the result as big green lines:
     if(relevant_h_lines.size() != 0){
-        print_lines(relevant_h_lines, input);
+        //print_lines(relevant_h_lines, input);
         std::cout<<"Hay lineas horizontales relevantes ->"<<relevant_h_lines.size()<<endl;
     }else{       
         std::cout<<"No hay líneas horizontales ->"<<relevant_h_lines.size()<<endl;
@@ -380,12 +457,15 @@ void obtain_boxes(std::vector<cv::Vec4i> lines, cv::Mat input){
   
     // draw the result as big green lines:
     if(relevant_v_lines.size() != 0){
-        print_lines(relevant_v_lines, input);
+        //print_lines(relevant_v_lines, input);
         std::cout<<"Hay lineas verticales relevantes ->"<<relevant_v_lines.size()<<endl;
     }else{       
         std::cout<<"No hay líneas verticales ->"<<relevant_v_lines.size()<<endl;
     }
 
+    
+    create_boxes(relevant_h_lines, relevant_v_lines, input, frm);
+    
     /*
     //--------------------------------------------------------Horizontales y verticales-----------------------------------------------
     // --------------------------------------------Muy ineficiente-------------------------------------------
@@ -453,13 +533,15 @@ void obtain_boxes(std::vector<cv::Vec4i> lines, cv::Mat input){
 
 int main(int argc, char* argv[]){
 
-    cv::Mat input = cv::imread("Imagenes/Prueba4.jpeg");
-    
+    cv::Mat input = cv::imread("Imagenes/Prueba5.jpeg");
+    string str = "Prueba5";
+    Frame frm(1, str, input);
     //Detection of the lines in a picture
     std::vector<cv::Vec4i> lines = detect_lines(input);
 
     //Obtain the semi vertical and horizontal lines
-    obtain_boxes(lines, input);
+    obtain_boxes(lines, input, frm);
+
 
     
     cv::waitKey(0);
