@@ -4,7 +4,7 @@
 #include "box_mod.cc"
 
 /// function to initialize private variables
-void ini_box(double len, double hgt, string name);
+//void ini_box(double len, double hgt, string name);
 void add_box(double len, double hgt);
 // function to set or change each value of the box (we don't need it)
 void add_length(double len);
@@ -16,6 +16,7 @@ void add_height(double hgt);
 // functions to get each value
 double get_length();
 double get_height();
+string get_name();
 
 /*double get_position(){
     return position;

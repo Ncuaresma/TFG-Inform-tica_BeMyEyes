@@ -86,6 +86,10 @@ class Box {
    public:
 
     // function to initialize private variables
+    Box(){
+        id = -1;
+    }
+
     Box(double len, double hgt, std::string n, vector<double> coord){
         double c;
         // add the new information of the box to the vector
@@ -112,6 +116,13 @@ class Box {
         length.push_back(len);
         area.push_back(len * hgt);
     }*/
+    bool isEmpty(){
+        if(id == -1){
+            return true;
+        }
+        return false;
+    }
+
     // function to set or change each value of the box (we don't need it)
     void set_length(double len){
         length = len;
@@ -128,15 +139,24 @@ class Box {
 
     // functions to get each value
     double get_length(){
+        if(this->isEmpty()){
+            return 0;
+        }
         return length;
     }
 
     //devuelve la última altua
     double get_height() {
+        if(this->isEmpty()){
+            return 0;
+        }
         return height;
     }
 
     string get_name() {
+        if(this->isEmpty()){
+            return NULL;
+        }
         return name;
     }
 

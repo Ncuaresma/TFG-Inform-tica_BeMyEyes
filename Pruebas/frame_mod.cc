@@ -121,9 +121,20 @@ class Frame {
     double get_height(){
         return height;
     }
+
+    vector<Box> get_boxes(){
+        return boxes;
+    }
+
     void add_box_frame(Box box){
         boxes.push_back(box);
+        cout <<" caja numero "<<  box.get_name()<< endl;
     }
+
+    int get_num_boxes(){
+        return boxes.size();
+    }
+
 
     void print_frame(){
         std::cout << this->name << endl;
@@ -155,6 +166,13 @@ class Frame {
         //matrix_file << this->image_mat << endl << endl;
         matrix_file.close();
     
+    }
+    Box get_box_by_id(int id){
+        if(id < get_num_boxes()){
+            return boxes.at(id);
+        }
+        cout << "No hay caja correspondiente a ese ID." << endl;
+        return Box();
     }
     /*
     void show_matrix2(string image){

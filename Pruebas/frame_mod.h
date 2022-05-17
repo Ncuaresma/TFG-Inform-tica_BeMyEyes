@@ -13,7 +13,12 @@ void show_name();
 // functions to get each value
 double get_length();
 double get_height();
-
-// your declarations (and certain types of definitions) here
+vector<Box> get_boxes();
+void add_box_frame(Box box);
+int get_num_boxes();
+Box get_box_by_id(int id);
+void print_frame();
+void show_image();
+void show_matrix();
 
 #endif

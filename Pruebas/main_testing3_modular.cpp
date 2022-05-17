@@ -325,7 +325,7 @@ vector<cv::Vec6d> get_relevant_vertical_lines(std::vector<cv::Vec6d> vertical_li
 /********************************************************************************************************
     Function that identify the real boxes in the image and creates the objects box that are in the frame
 *********************************************************************************************************/
-void create_boxes(std::vector<cv::Vec6d> relevant_h_lines, std::vector<cv::Vec6d> relevant_v_lines, cv::Mat input, Frame frm){
+void create_boxes(std::vector<cv::Vec6d> relevant_h_lines, std::vector<cv::Vec6d> relevant_v_lines, cv::Mat input, Frame &frm){
     //to discart the irrelevant lines
     std::vector<int> irrelevant_lines = {};
     int num_box = 0;
@@ -393,7 +393,8 @@ void create_boxes(std::vector<cv::Vec6d> relevant_h_lines, std::vector<cv::Vec6d
             
             if(first_line[0] == 3){
                 print_lines(box_lines, input);
-                Box(abs(first_line[4]-first_line[2]), abs(check_v1_line[5]-check_v1_line[3]), std::to_string(num_box), coordenates);
+                Box box1(abs(first_line[4]-first_line[2]), abs(check_v1_line[5]-check_v1_line[3]), std::to_string(num_box), coordenates);
+                frm.add_box_frame(box1);
                 num_box++;
                 //CREAMOS LA CAJA CON LAS COORDENADAS
             }
@@ -405,7 +406,7 @@ void create_boxes(std::vector<cv::Vec6d> relevant_h_lines, std::vector<cv::Vec6d
 /*******************************************************************************************
     Function that identify the coordenades of the boxes that select the objects in the image
 ********************************************************************************************/
-void obtain_boxes(std::vector<cv::Vec4i> lines, cv::Mat input, Frame frm){
+void obtain_boxes(std::vector<cv::Vec4i> lines, cv::Mat input, Frame &frm){
     //Creamos los ficheros donde vamos a escribir las lineas
     ofstream horizontal_file;
     ofstream vertical_file;
@@ -542,8 +543,16 @@ int main(int argc, char* argv[]){
         //Detection of the lines in a picture
         std::vector<cv::Vec4i> lines = detect_lines(input);
 
+        cout << "Primero hay estas cajas"<<frm.get_num_boxes()<<endl;
         //Obtain the semi vertical and horizontal lines
         obtain_boxes(lines, input, frm);
+        int num = frm.get_num_boxes();
+
+        cout << "Luego hay estas cajas"<<num<<endl;
+        vector <Box> boxes;
+        for (int i = 0; i < num; i++){
+            cout << "Caja num " << i << " con nombre " << frm.get_box_by_id(i).get_name() << endl;
+        }
 
 
         
