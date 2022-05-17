@@ -322,6 +322,9 @@ vector<cv::Vec6d> get_relevant_vertical_lines(std::vector<cv::Vec6d> vertical_li
     return relevant_v_lines;
 }
 
+/********************************************************************************************************
+    Function that identify the real boxes in the image and creates the objects box that are in the frame
+*********************************************************************************************************/
 void create_boxes(std::vector<cv::Vec6d> relevant_h_lines, std::vector<cv::Vec6d> relevant_v_lines, cv::Mat input, Frame frm){
     //to discart the irrelevant lines
     std::vector<int> irrelevant_lines = {};
@@ -390,7 +393,7 @@ void create_boxes(std::vector<cv::Vec6d> relevant_h_lines, std::vector<cv::Vec6d
             
             if(first_line[0] == 3){
                 print_lines(box_lines, input);
-                /*Box(abs(first_line[4]-first_line[2]), abs(check_v1_line[5]-check_v1_line[3]), std::to_string(num_box), coordenates);*/
+                Box(abs(first_line[4]-first_line[2]), abs(check_v1_line[5]-check_v1_line[3]), std::to_string(num_box), coordenates);
                 num_box++;
                 //CREAMOS LA CAJA CON LAS COORDENADAS
             }
@@ -534,16 +537,16 @@ void obtain_boxes(std::vector<cv::Vec4i> lines, cv::Mat input, Frame frm){
 int main(int argc, char* argv[]){
 
     cv::Mat input = cv::imread("Imagenes/Prueba5.jpeg");
-    string str = "Prueba5";
-    Frame frm(1, str, input);
-    //Detection of the lines in a picture
-    std::vector<cv::Vec4i> lines = detect_lines(input);
+        string str = "Prueba5";
+        Frame frm(1, str, input);
+        //Detection of the lines in a picture
+        std::vector<cv::Vec4i> lines = detect_lines(input);
 
-    //Obtain the semi vertical and horizontal lines
-    obtain_boxes(lines, input, frm);
+        //Obtain the semi vertical and horizontal lines
+        obtain_boxes(lines, input, frm);
 
 
-    
-    cv::waitKey(0);
+        
+        cv::waitKey(0);
     return 0;
 }

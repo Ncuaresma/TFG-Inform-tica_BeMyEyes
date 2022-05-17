@@ -1,6 +1,7 @@
 #ifndef FRAME_MOD_H
 #define FRAME_MOD_H
 
+#include "box_mod.h"
 #include "frame_mod.cc"
 
 // function to initialize private variables

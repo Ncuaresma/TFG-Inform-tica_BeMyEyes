@@ -64,7 +64,6 @@ using namespace std;
 #include <vector>
 #include <fstream>
 
-#include "box_mod.h"
 #include <opencv2/opencv.hpp>
 #include <sstream>
 
@@ -169,7 +168,7 @@ class Frame {
     }
     */
 
-    // obtain the boxes in the frame
+    /*// obtain the boxes in the frame
     void obtain_boxes(){
         // find the pixels in red = 
         int num_boxes=0;
@@ -178,9 +177,8 @@ class Frame {
             for(int j = 0; j < this->length; j++)
                 std::cout << this->image_mat; //image_mat[this->height * j + i ];
         }
-    }
+    }*/
     // check if the detected box is one of the boxes detected in the previous 3 frames
-    
 
 };
     

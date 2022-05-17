@@ -69,11 +69,14 @@ class Box {
 
    private:
     int id;
-    vector<double> length; // array of lengths of the same box from different frames
-    vector<double> height; // array of heights of the same box from different frames
-    vector<double> area; // array of areas of the same box from different frames
-    std::vector<cv::Vec6d> lines = {};
-    std::vector<double> coordenates = {};//x1, y1, x2, y2
+    int alpha = 20; // parametro para diferenciar si la caja es muy grande
+    double length; // array of lengths of the same box from different frames
+    double height; // array of heights of the same box from different frames
+    double area; // array of areas of the same box from different frames
+    vector<cv::Vec6d> lines = {};
+    vector<double> coordenates = {};//x1, y1, x2, y2
+    vector<double> centro = {};//xn,yn // centro de la caja para porder comparar si una es igual (similar a otra)
+    
     //vector <double> growing; // percentage of the growing from teh box1 to the same box1 of the next frame
     // estas dos de abajo son posibbles manera de identificar cada box para poder comparar las correspondientes de un frame u otro
     //ESTA NO SIRVE PARA NADA vector<double> position; // para ubicar la caja y poder comprobar que es la misma de un frame a otro
@@ -84,34 +87,40 @@ class Box {
 
     // function to initialize private variables
     Box(double len, double hgt, std::string n, vector<double> coord){
+        double c;
         // add the new information of the box to the vector
-        length.push_back(len);
-        height.push_back(hgt);
-        area.push_back(len * hgt);
+        length = len;
+        height = hgt;
+        area = len * hgt;
         name = n;
-        copy(coord.begin(),coord.end(), coordenates.begin());
+        centro.push_back(len/2);
+        centro.push_back(hgt/2);
+        /*for (int i = 0; i < coord.size(); i++){
+            c = coord.
+        }*/
+        ///////////////////////////////////////////////////////////////////////////CAMBIAR es que daba segmentation fault//////////////////////////////////
+        coordenates = coord;
+        //copy(coord.begin(),coord.end(), coordenates.begin());
         //tambien habra que añadir que area seleccionamos para coger el color
         //y el color que tiene en ese arrea
         // lo mismo lo mejor seria un array de matrices y guardar directamente la matriz con la que comparar
         //un array por cada area seleccionada de la foto
     }
-
+/*
     void add_box(double len, double hgt){
         height.push_back(hgt);
         length.push_back(len);
         area.push_back(len * hgt);
-    }
+    }*/
     // function to set or change each value of the box (we don't need it)
-    void add_length(double len){
-        length.push_back(len);
+    void set_length(double len){
+        length = len;
     }
 
-    void add_height(double hgt){
-        height.push_back(hgt);
+    void set_height(double hgt){
+        height = hgt;
         //area = this->length * hgt;
     }
-
-
 
    /* void set_position(double pos){
         position = pos;
@@ -119,32 +128,41 @@ class Box {
 
     // functions to get each value
     double get_length(){
-        int size = length.size();
-        return length.at(size);
+        return length;
     }
 
+    //devuelve la última altua
     double get_height() {
-        int size = height.size();
-        return height.at(size);
+        return height;
     }
+
     string get_name() {
         return name;
     }
 
-    /*double get_position(){
-        return position;
-    }*/
+    vector<double> get_position(){
+        return centro;
+    }
 
     
     double calculate_area() {
-        int size = area.size();
-        return area.at(size);
+        return area;
     }
 
     // function to compare two boxes
     double size_difference(Box box1, Box box2) {
         if((box1.get_height() < box2.get_height())&&(box1.get_length() < box2.get_length())){
             return box2.calculate_area() - box1.calculate_area();
+        }
+        return 0;
+    }
+
+
+    /*The box has increase a lot*/
+    // function to compare two boxes
+    double close_box(Box box1, Box box2) {
+        if(((box2.get_height() - box1.get_height()) > alpha) or ((box2.get_length() - box1.get_length()) > alpha)){
+            return 1;
         }
         return 0;
     }
